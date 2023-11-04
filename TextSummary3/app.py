@@ -6,6 +6,10 @@ import nltk
 from nltk.corpus import stopwords
 import requests
 
+from pytube import YouTube
+import os
+import whisper
+
 # Download NLTK stopwords
 nltk.download('stopwords')
 
