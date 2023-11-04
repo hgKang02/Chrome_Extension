@@ -61,6 +61,27 @@ def transcribe():
     transcript = ""
     return jsonify({'transcript': transcript})
 
+def applyWhisper() -> str:
+    # Example YouTube link: 'https://www.youtube.com/watch?v=f60dheI4ARg'
+    
+    data = request.get_json()
+    url = data['url']
+    
+    yt = YouTube(url)
+    video = yt.streams.filter(only_audio=True).first()
+    destination = '.'
+    out_file = video.download(output_path=destination)
+    base, ext = os.path.splitext(out_file)
+    new_file = base + '.mp3'
+    os.rename(out_file, new_file)
+    
+    model = whisper.load_model("tiny")  # Options: small, medium, large, etc.
+    result = model.transcribe(new_file)
+    transcript = result["text"]
+    
+    return jsonify({'transcript': transcript})
+    
+
 @app.route('/summarize', methods=['POST'])
 def summarize():
     data = request.get_json()
