@@ -65,9 +65,8 @@ def transcribe():
     transcript = ""
     return jsonify({'transcript': transcript})
 
-def applyWhisper() -> str:
+def applyWhisper():
     # Example YouTube link: 'https://www.youtube.com/watch?v=f60dheI4ARg'
-    
     data = request.get_json()
     url = data['url']
     
