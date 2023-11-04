@@ -4,6 +4,7 @@ from flask_cors import CORS
 import re
 import nltk
 from nltk.corpus import stopwords
+import requests
 
 # Download NLTK stopwords
 nltk.download('stopwords')
@@ -47,19 +48,30 @@ def generate_summary(text_chunks):
         chunk_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
         summary += chunk_summary + " "
         print(summary)
-        counter+=1
+        counter += 1
     return summary
+
+@app.route('/transcribe', methods=['POST'])
+def transcribe():
+    data = request.get_json()
+    url = data['url']
+    
+    # insert code here
+
+    transcript = ""
+    return jsonify({'transcript': transcript})
 
 @app.route('/summarize', methods=['POST'])
 def summarize():
-    text = request.form['text']
-    # print("Received text:", text)
+    data = request.get_json()
+    transcript = data['transcript']
+    # print("Received transcript:", transcript)
 
     # Remove stopwords from the input text
-    text = remove_stopwords(text)
+    transcript = remove_stopwords(transcript)
 
     max_chunk_length = 500  # Adjust the chunk length as needed
-    text_chunks = split_text(text, max_chunk_length)
+    text_chunks = split_text(transcript, max_chunk_length)
     
     # Generate summary for the text chunks
     summary = generate_summary(text_chunks)
