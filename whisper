@@ -1,0 +1,28 @@
+!pip install pytube
+!pip install git+https://github.com/openai/whisper.git
+!pip install --upgrade --no-deps --force-reinstall git+https://github.com/openai/whisper.git
+!pip install setuptools-rust
+!sudo apt update && sudo apt install ffmpeg
+
+from pytube import YouTube
+import os
+import whisper
+import time
+
+yt = YouTube('https://www.youtube.com/watch?v=f60dheI4ARg')
+video = yt.streams.filter(only_audio=True).first()
+destination = '.'
+out_file = video.download(output_path=destination)
+base, ext = os.path.splitext(out_file)
+print("Enter file type (mp3 or wav)")
+file_type = str(input(">> "))
+new_file = base + '.' + file_type
+os.rename(out_file, new_file)
+
+import time
+
+time.sleep(45)
+
+model = whisper.load_model("tiny")
+result = model.transcribe(yt.title+ '.' + file_type)
+print(result["text"])
