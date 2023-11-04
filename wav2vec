@@ -1,5 +1,6 @@
 !pip install transformers
 !pip install datasets
+!pip install pytube
 !pip install librosa
 !pip install numpy
 !pip install scipy
@@ -8,24 +9,25 @@
 !pip install ffmpeg
 !pip install torch
 !pip install sentencepiece
+!pip install pytube
 !pip install pydub
 !sudo apt update && sudo apt install ffmpeg
-!pip install git+https://github.com/pytube/pytube
 
-from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer
-import os
-import subprocess
 import soundfile
+from pytube import YouTube
 import torch
 import librosa
 import numpy as np
 import soundfile as sf
 from scipy.io import wavfile
 from IPython.display import Audio
-from pytube import YouTube
+from transformers import Wav2Vec2ForCTC, Wav2Vec2Tokenizer
+import os
+import subprocess
 
-tokenizer = Wav2Vec2Tokenizer.from_pretrained("facebook/wav2vec2-large-robust-ft-libri-960h")
-model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-robust-ft-libri-960h")
+
+tokenizer = Wav2Vec2Tokenizer.from_pretrained("facebook/wav2vec2-base-960h")
+model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-base-960h")
 
 yt = YouTube('https://www.youtube.com/watch?v=f60dheI4ARg')
 video = yt.streams.filter(only_audio=True).first()
@@ -37,20 +39,25 @@ file_type = str(input(">> "))
 new_file = base + '.' + file_type
 os.rename(out_file, new_file)
 
-
 # convert mp3 to wav file
 subprocess.call(['ffmpeg', '-i', new_file,
-                "new_wav.wav"])
+                 "new_wav.wav"])
+
 data, samplerate = sf.read("new_wav.wav")
 sf.write("new.wav", data, samplerate, subtype = "PCM_16")
+
 file_name = "new.wav"
+
 data = wavfile.read(file_name)
 framerate = data[0]
 sounddata = data[1]
 time = np.arange(0,len(sounddata))/framerate
 print('Sampling rate:',framerate,'Hz')
+
 input_audio, rate = librosa.load(file_name, sr=16000)
+
 input_values = tokenizer(input_audio, return_tensors="pt").input_values
 logits = model(input_values).logits
 predicted_ids = torch.argmax(logits, dim=-1)
 transcription = tokenizer.batch_decode(predicted_ids)[0]
+print(transcription)
