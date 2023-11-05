@@ -1,0 +1,11 @@
+pytube
+git+https://github.com/openai/whisper.git
+setuptools-rust
+ffmpeg
+flask
+flask_cors
+transformers
+nltk
+requests
+youtube-dl
+whisper
