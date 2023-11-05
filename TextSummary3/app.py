@@ -5,10 +5,10 @@ import re
 import nltk
 from nltk.corpus import stopwords
 import requests
+
 from pytube import YouTube
 import os
 import whisper
-import time
 
 # Download NLTK stopwords
 nltk.download('stopwords')
@@ -59,34 +59,30 @@ def generate_summary(text_chunks):
 def transcribe():
     data = request.get_json()
     url = data['url']
-    yt = YouTube(url)
-    video = yt.streams.filter(only_audio=True).first()
-    out_file = video.download(filename="audio.wav")
-    time.sleep(45)
+    
+    # insert code here
 
-    model = whisper.load_model("tiny")
-    transcript = model.transcribe(out_file)
+    transcript = ""
     return jsonify({'transcript': transcript})
 
-# def applyWhisper() -> str:
-#     # Example YouTube link: 'https://www.youtube.com/watch?v=f60dheI4ARg'
+def applyWhisper():
+    # Example YouTube link: 'https://www.youtube.com/watch?v=f60dheI4ARg'
+    data = request.get_json()
+    url = data['url']
     
-#     data = request.get_json()
-#     url = data['url']
+    yt = YouTube(url)
+    video = yt.streams.filter(only_audio=True).first()
+    destination = '.'
+    out_file = video.download(output_path=destination)
+    base, ext = os.path.splitext(out_file)
+    new_file = base + '.mp3'
+    os.rename(out_file, new_file)
     
-#     yt = YouTube(url)
-#     video = yt.streams.filter(only_audio=True).first()
-#     destination = '.'
-#     out_file = video.download(output_path=destination)
-#     base, ext = os.path.splitext(out_file)
-#     new_file = base + '.mp3'
-#     os.rename(out_file, new_file)
+    model = whisper.load_model("tiny")  # Options: small, medium, large, etc.
+    result = model.transcribe(new_file)
+    transcript = result["text"]
     
-#     model = whisper.load_model("tiny")  # Options: small, medium, large, etc.
-#     result = model.transcribe(new_file)
-#     transcript = result["text"]
-    
-#     return jsonify({'transcript': transcript})
+    return jsonify({'transcript': transcript})
     
 
 @app.route('/summarize', methods=['POST'])
