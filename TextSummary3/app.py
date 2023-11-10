@@ -62,10 +62,15 @@ def transcribe():
     yt = YouTube(url)
     video = yt.streams.filter(only_audio=True).first()
     out_file = video.download(filename="audio.wav")
-    model = whisper.load_model("tiny")
-    transcript = model.transcribe(out_file)
+    print("loading model")
+    try:
+        model = whisper.load_model("tiny")
+    except Exception as e:
+        print(f"Error loading model: {e}")
+    print("loaded model")
+    
+    transcript = model.transcribe("audio.wav")
     return jsonify({'transcript': transcript})
-
 
 # def applyWhisper():
 #     # Example YouTube link: 'https://www.youtube.com/watch?v=f60dheI4ARg'
