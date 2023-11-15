@@ -85,11 +85,15 @@ def transcribe():
 #     new_file = base + '.mp3'
 #     os.rename(out_file, new_file)
     
-#     model = whisper.load_model("tiny")  # Options: small, medium, large, etc.
-#     result = model.transcribe(new_file)
-#     transcript = result["text"]
-    
-#     return jsonify({'transcript': transcript})
+#     model = whisper.load_model("medium") # parameters =  {tiny, base, small, medium, large}
+#     audio = whisper.load_audio(new_file)
+#     audio = whisper.pad_or_trim(audio)
+#     mel = whisper.log_mel_spectrogram(audio).to(model.device)
+#     _, probs = model.detect_language(mel)
+#     options = whisper.DecodingOptions()
+#     result = whisper.decode(model, mel, options)
+
+#     return jsonify({'transcript': result.text})
     
 
 @app.route('/summarize', methods=['POST'])
