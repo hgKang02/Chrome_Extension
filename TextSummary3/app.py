@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from transformers import PegasusForConditionalGeneration, AutoTokenizer
+from transformers import AutoTokenizer, PegasusXForConditionalGeneration
 from flask_cors import CORS
 import re
 import nltk
@@ -8,6 +8,7 @@ import requests
 
 from pytube import YouTube
 import os
+import torch
 import whisper
 
 # Download NLTK stopwords
@@ -16,9 +17,10 @@ nltk.download('stopwords')
 app = Flask(__name__)
 CORS(app, resources={r'*': {'origins': '*'}})
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model_name = "google/pegasus-x-large"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = PegasusForConditionalGeneration.from_pretrained(model_name)
+model = PegasusXForConditionalGeneration.from_pretrained(model_name)
 
 # Use NLTK stopwords
 stopwords = set(stopwords.words('english'))
@@ -32,12 +34,15 @@ def split_text(text, max_chunk_length):
     chunks = []
     words = text.split()
     current_chunk = ""
+    counter = 0
     for word in words:
-        if len(current_chunk) + len(word) < max_chunk_length:
+        if counter + 1 < max_chunk_length:
             current_chunk += word + " "
+            counter+=1
         else:
             chunks.append(current_chunk.strip())
             current_chunk = word + " "
+            counter = 0
     chunks.append(current_chunk.strip())
     print("there are {} chunks".format(len(chunks)))
     return chunks
@@ -47,11 +52,14 @@ def generate_summary(text_chunks):
     counter = 0
     for chunk in text_chunks:
         print("summarizing chunk ", counter)
-        inputs = tokenizer.encode(chunk, return_tensors='pt', truncation=True)
-        summary_ids = model.generate(inputs, max_new_tokens=16384, min_length=40, length_penalty=3.0, num_beams=6)
-        chunk_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+        print("encoding")
+        inputs = tokenizer(chunk, return_tensors="pt")
+        print("generating")
+        summary_ids = model.generate(inputs["input_ids"])
+        print("decoding")
+        chunk_summary = tokenizer.batch_decode(summary_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         summary += chunk_summary + " "
-        print(summary)
+        # print(summary)
         counter += 1
     return summary
 
@@ -71,25 +79,6 @@ def transcribe():
     
     transcript = model.transcribe("audio.wav")
     return jsonify({'transcript': transcript})
-
-# def applyWhisper():
-#     # Example YouTube link: 'https://www.youtube.com/watch?v=f60dheI4ARg'
-#     data = request.get_json()
-#     url = data['url']
-    
-#     yt = YouTube(url)
-#     video = yt.streams.filter(only_audio=True).first()
-#     destination = '.'
-#     out_file = video.download(output_path=destination)
-#     base, ext = os.path.splitext(out_file)
-#     new_file = base + '.mp3'
-#     os.rename(out_file, new_file)
-    
-#     model = whisper.load_model("tiny")  # Options: small, medium, large, etc.
-#     result = model.transcribe(new_file)
-#     transcript = result["text"]
-    
-#     return jsonify({'transcript': transcript})
     
 
 @app.route('/summarize', methods=['POST'])
@@ -99,11 +88,12 @@ def summarize():
     # print("Received transcript:", transcript)
 
     # Remove stopwords from the input text
-    transcript = remove_stopwords(transcript)
+    print(type(transcript), transcript["text"])
+    transcript = remove_stopwords(transcript["text"])
 
-    max_chunk_length = 500  # Adjust the chunk length as needed
+    max_chunk_length = 100  # Adjust the chunk length as needed
     text_chunks = split_text(transcript, max_chunk_length)
-    
+    print("text chunks: ", text_chunks)
     # Generate summary for the text chunks
     summary = generate_summary(text_chunks)
     print(summary)
